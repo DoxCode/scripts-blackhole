@@ -441,7 +441,7 @@ class Torbox(TorrentBase):
 
     def _addTorrentFile(self):
         nametorrent = self.f.name.split('/')[-1]
-        files = {'file': (nametorrent, self.f, 'application/x-bittorrent')}
+        files = {'file': (nametorrent, self.fileData, 'application/x-bittorrent')}
         return self._addFile(files=files)
 
     def _addMagnetFile(self):

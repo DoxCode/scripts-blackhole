@@ -314,14 +314,18 @@ class Torbox(TorrentBase):
         self.mountTorrentsPath = torbox["mountTorrentsPath"]
         self.submittedTime = None
         self.lastInactiveCheck = None
+        self.authId = None  # initialize before the request
 
         userInfoRequest = retryRequest(
             lambda: requests.get(urljoin(torbox['host'], "user/me"), headers=self.headers),
             print=self.print
         )
-        if userInfoRequest is not None:
-            userInfo = userInfoRequest.json()
-            self.authId = userInfo['data']['auth_id']
+        if userInfoRequest is not None and userInfoRequest.content:
+            try:
+                userInfo = userInfoRequest.json()
+                self.authId = userInfo['data']['auth_id']
+            except Exception:
+                pass
 
     def submitTorrent(self):
         if self.failIfNotCached:
@@ -366,11 +370,8 @@ class Torbox(TorrentBase):
         self._enforceId()
 
         if refresh or not self._info:
-            if not self.authId:
-                return None
-            
             currentTime = datetime.now()
-            if (currentTime - self.submittedTime).total_seconds() < 300:
+            if self.authId and (currentTime - self.submittedTime).total_seconds() < 300:
                 if not self.lastInactiveCheck or (currentTime - self.lastInactiveCheck).total_seconds() > 5:
                     inactiveCheckUrl = f"https://relay.torbox.app/v1/inactivecheck/torrent/{self.authId}/{self.id}"
                     retryRequest(
